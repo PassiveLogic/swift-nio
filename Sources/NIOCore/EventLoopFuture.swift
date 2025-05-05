@@ -118,6 +118,9 @@ internal struct CallbackList {
                     }
                     break loop
                 }
+                // TODO: This infinite while loop feels dangerous.
+                // It should be refactored to run within a Task within Swift Concurrency, and then
+                // there should be a Task.yield here.
             }
         default:
             var pending = self._allCallbacks()
@@ -197,7 +200,7 @@ public struct EventLoopPromise<Value> {
     ///   - file: The file this promise was allocated in, for debugging purposes.
     ///   - line: The line this promise was allocated on, for debugging purposes.
     @inlinable
-    internal init(eventLoop: EventLoop, file: StaticString, line: UInt) {
+    package init(eventLoop: EventLoop, file: StaticString, line: UInt) {
         self.futureResult = EventLoopFuture<Value>(_eventLoop: eventLoop, file: file, line: line)
     }
 
@@ -1087,6 +1090,17 @@ extension EventLoopFuture {
     @preconcurrency
     @inlinable
     public func wait(file: StaticString = #file, line: UInt = #line) throws -> Value where Value: Sendable {
+        #if os(WASI)
+        // NOTE: As of July 22, 2025 `wait()` calling wait() is not supported on WASI platforms.
+        //
+        // This may change down the road if and when true multi-threading evolves. But right now
+        // calling wait here results in the following runtime crash:
+        //
+        // ```
+        // MyWasmExecutable.wasm:0x123456 Uncaught (in promise) RuntimeError: Atomics.wait cannot be called in this context
+        // ```
+        fatalError("Do not call wait() on WASI platforms. It will freeze or crash. Use get() instead.")
+        #endif
         try self._blockingWaitForFutureCompletion(file: file, line: line)
     }
 
