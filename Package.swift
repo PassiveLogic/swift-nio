@@ -60,6 +60,7 @@ let package = Package(
         .library(name: "NIOCore", targets: ["NIOCore"]),
         .library(name: "NIO", targets: ["NIO"]),
         .library(name: "NIOEmbedded", targets: ["NIOEmbedded"]),
+        .library(name: "NIOAsyncIO", targets: ["NIOAsyncIO"]),
         .library(name: "NIOPosix", targets: ["NIOPosix"]),
         .library(name: "_NIOConcurrency", targets: ["_NIOConcurrency"]),
         .library(name: "NIOTLS", targets: ["NIOTLS"]),
@@ -105,6 +106,14 @@ let package = Package(
                 "_NIODataStructures",
                 swiftAtomics,
                 swiftCollections,
+            ],
+            swiftSettings: strictConcurrencySettings
+        ),
+        .target(
+            name: "NIOAsyncIO",
+            dependencies: [
+                "NIOCore",
+                swiftAtomics,
             ],
             swiftSettings: strictConcurrencySettings
         ),
