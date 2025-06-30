@@ -104,6 +104,8 @@ internal struct CallbackList {
                     }
                     break loop
                 }
+                // TODO: SM: Should their be a Task.yield or something here to allow task cancellation?
+                // This infinite while loop feels dangerous.
             }
         default:
             var pending = self._allCallbacks()
