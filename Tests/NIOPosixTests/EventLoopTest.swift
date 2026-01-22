@@ -75,7 +75,7 @@ final class MultiThreadedEventLoopGroupTests {
         let result2 = result.load(ordering: .sequentiallyConsistent)
         #expect(!result2)
 
-        eventLoop.advanceTime(by: .seconds(2))  // should fire now
+        eventLoop.advanceTime(by: .seconds(1))  // should fire now
         await assertThat(future: scheduled.futureResult, isFulfilled: true)
 
         let result3 = result.load(ordering: .sequentiallyConsistent)
@@ -329,20 +329,22 @@ final class MultiThreadedEventLoopGroupTests {
     func testScheduleRepeatedTaskToNotRetainRepeatedTask() throws {
         let initialDelay: TimeAmount = .milliseconds(5)
         let delay: TimeAmount = .milliseconds(10)
-        let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
         weak var weakRepeated: RepeatedTask?
-        let repeated = eventLoopGroup.next().scheduleRepeatedTask(
-            initialDelay: initialDelay,
-            delay: delay
-        ) {
-            (_: RepeatedTask) -> Void in
-        }
-        weakRepeated = repeated
-        #expect(weakRepeated != nil)
-        repeated.cancel()
-        #expect(throws: Never.self) {
-            try eventLoopGroup.syncShutdownGracefully()
+        do {
+            let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+            let repeated = eventLoopGroup.next().scheduleRepeatedTask(
+                initialDelay: initialDelay,
+                delay: delay
+            ) {
+                (_: RepeatedTask) -> Void in
+            }
+            weakRepeated = repeated
+            #expect(weakRepeated != nil)
+            repeated.cancel()
+            #expect(throws: Never.self) {
+                try eventLoopGroup.syncShutdownGracefully()
+            }
         }
         assert(weakRepeated == nil, within: .seconds(1))
     }
@@ -352,16 +354,18 @@ final class MultiThreadedEventLoopGroupTests {
         weak var weakEventLoop: EventLoop? = nil
         let initialDelay: TimeAmount = .milliseconds(5)
         let delay: TimeAmount = .milliseconds(10)
-        let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        weakEventLoop = eventLoopGroup.next()
-        #expect(weakEventLoop != nil)
+        do {
+            let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+            weakEventLoop = eventLoopGroup.next()
+            #expect(weakEventLoop != nil)
 
-        eventLoopGroup.next().scheduleRepeatedTask(initialDelay: initialDelay, delay: delay) {
-            (_: RepeatedTask) -> Void in
-        }
+            eventLoopGroup.next().scheduleRepeatedTask(initialDelay: initialDelay, delay: delay) {
+                (_: RepeatedTask) -> Void in
+            }
 
-        #expect(throws: Never.self) {
-            try eventLoopGroup.syncShutdownGracefully()
+            #expect(throws: Never.self) {
+                try eventLoopGroup.syncShutdownGracefully()
+            }
         }
         assert(weakEventLoop == nil, within: .seconds(1))
     }
@@ -369,13 +373,13 @@ final class MultiThreadedEventLoopGroupTests {
     @Test
     func testScheduledRepeatedAsyncTask() async throws {
         let eventLoop = makeEventLoop()
-        nonisolated(unsafe) var counter: Int = 0
+        let counter = NIOLoopBoundBox(0, eventLoop: eventLoop)
 
         let repeatedTask = eventLoop.scheduleRepeatedAsyncTask(
             initialDelay: .milliseconds(10),
             delay: .milliseconds(10)
         ) { (_: RepeatedTask) in
-            counter += 1
+            counter.value += 1
             let p = eventLoop.makePromise(of: Void.self)
             _ = eventLoop.scheduleTask(in: .milliseconds(10)) {
 
@@ -389,46 +393,46 @@ final class MultiThreadedEventLoopGroupTests {
         }
 
         // At t == 0, counter == 0
-        #expect(0 == counter)
+        #expect(0 == counter.value)
 
         // At t == 5, counter == 0
         eventLoop.advanceTime(by: .milliseconds(5))
         eventLoop.run()
-        #expect(0 == counter)
+        #expect(0 == counter.value)
 
         // At == 10ms, counter == 1
         eventLoop.advanceTime(by: .milliseconds(5))
         eventLoop.run()
-        #expect(1 == counter)
+        #expect(1 == counter.value)
 
         // At t == 15ms, counter == 1
         eventLoop.advanceTime(by: .milliseconds(5))
         eventLoop.run()
-        #expect(1 == counter)
+        #expect(1 == counter.value)
 
         // At t == 20, counter == 1 (because the task takes 10ms to execute)
         eventLoop.advanceTime(by: .milliseconds(5))
-        #expect(1 == counter)
+        #expect(1 == counter.value)
 
         // At t == 25, counter == 1 (because the task takes 10ms to execute)
         eventLoop.advanceTime(by: .milliseconds(5))
-        #expect(1 == counter)
+        #expect(1 == counter.value)
 
         // At t == 30ms, counter == 2
         eventLoop.advanceTime(by: .milliseconds(5))
-        #expect(2 == counter)
+        #expect(2 == counter.value)
 
         // At t == 40ms, counter == 2
         eventLoop.advanceTime(by: .milliseconds(10))
-        #expect(2 == counter)
+        #expect(2 == counter.value)
 
         // At t == 50ms, counter == 3
         eventLoop.advanceTime(by: .milliseconds(10))
-        #expect(3 == counter)
+        #expect(3 == counter.value)
 
         // At t == 60ms, counter == 3
         eventLoop.advanceTime(by: .milliseconds(10))
-        #expect(3 == counter)
+        #expect(3 == counter.value)
 
         // At t == 70ms, counter == 4 (not testing to allow a large jump in time advancement)
         // At t == 80ms, counter == 4 (not testing to allow a large jump in time advancement)
@@ -438,22 +442,22 @@ final class MultiThreadedEventLoopGroupTests {
         // to ensure the scheduling properly re-triggers every 20 seconds, even
         // when the time advancement exceeds 20 seconds.
         eventLoop.advanceTime(by: .milliseconds(29))
-        #expect(4 == counter)
+        #expect(4 == counter.value)
 
         // At t == 90ms, counter == 5
         eventLoop.advanceTime(by: .milliseconds(1))
-        #expect(5 == counter)
+        #expect(5 == counter.value)
 
         // Stop repeating.
         repeatedTask.cancel()
 
         // At t > 90ms, counter stays at 5 because repeating is stopped
         eventLoop.run()
-        #expect(5 == counter)
+        #expect(5 == counter.value)
 
         // Event after 10 hours, counter stays at 5, because repeating is stopped
         eventLoop.advanceTime(by: .hours(10))
-        #expect(5 == counter)
+        #expect(5 == counter.value)
     }
 
     @Test
