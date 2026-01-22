@@ -329,10 +329,10 @@ final class MultiThreadedEventLoopGroupTests {
     func testScheduleRepeatedTaskToNotRetainRepeatedTask() throws {
         let initialDelay: TimeAmount = .milliseconds(5)
         let delay: TimeAmount = .milliseconds(10)
+        let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
         weak var weakRepeated: RepeatedTask?
         do {
-            let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
             let repeated = eventLoopGroup.next().scheduleRepeatedTask(
                 initialDelay: initialDelay,
                 delay: delay
@@ -352,9 +352,9 @@ final class MultiThreadedEventLoopGroupTests {
     @Test
     func testScheduleRepeatedTaskToNotRetainEventLoop() throws {
         weak var weakEventLoop: EventLoop? = nil
-        let initialDelay: TimeAmount = .milliseconds(5)
-        let delay: TimeAmount = .milliseconds(10)
         do {
+            let initialDelay: TimeAmount = .milliseconds(5)
+            let delay: TimeAmount = .milliseconds(10)
             let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
             weakEventLoop = eventLoopGroup.next()
             #expect(weakEventLoop != nil)
