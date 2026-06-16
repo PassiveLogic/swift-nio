@@ -499,8 +499,9 @@ fileprivate actor _AsyncEventLoopExecutor {
             let nanoseconds = max(interval.nanoseconds, 0)
             // NOTE: Using weak self here to avoid potential memory leaks due
             // to reference cycles, since the task is stored to a member variable.
-            // `weak` is unavailable in embedded Swift; use `unowned(unsafe)`.
-            wakeUpTask = Task { [unowned(unsafe) self] in
+            // `weak` is unavailable in embedded Swift. Strong capture (accepts a transient retain
+            // cycle until the task completes; the executor cancels/clears wakeUpTask).
+            wakeUpTask = Task { [self] in
                 if nanoseconds > 0 {
                     #if os(WASI)
                     // `Task.sleep(nanoseconds:)` is unavailable in embedded Swift. TODO: back this
