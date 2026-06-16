@@ -57,12 +57,16 @@ extension ByteBuffer {
             return nil
         }
 
+        #if !os(WASI)
+        // `as! T` (cast to a generic type parameter) is unavailable in embedded Swift; the general
+        // memory-copy path below handles UInt8 correctly too, so skip this fast-path on WASI.
         if T.self == UInt8.self {
             assert(range.count == 1)
             return self.withUnsafeReadableBytes { ptr in
                 ptr[range.startIndex] as! T
             }
         }
+        #endif
 
         return self.withUnsafeReadableBytes { ptr in
             var value: T = 0

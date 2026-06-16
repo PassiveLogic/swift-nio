@@ -179,7 +179,9 @@ public final class RepeatedTask {
         self.scheduled = self.eventLoop.scheduleTask(in: self.delay) {
             // we need to repeat this as we might have been cancelled in the meantime
             guard let task = self.task else {
-                return self.eventLoop.makeSucceededFuture(())
+                // `makeSucceededVoidFuture()` is a protocol requirement (dispatches on `any EventLoop`
+                // in embedded), unlike the generic `makeSucceededFuture<T>` extension method.
+                return self.eventLoop.makeSucceededVoidFuture()
             }
             return task(self)
         }
@@ -268,6 +270,13 @@ public protocol EventLoop: EventLoopGroup {
     /// - Returns: `EventLoopFuture` that is notified once the task was executed.
     @preconcurrency
     func submit<T>(_ task: @escaping @Sendable () throws -> T) -> EventLoopFuture<T>
+
+    // Promoted from extension methods to protocol requirements so they dispatch through the witness
+    // table on `any EventLoop`. Embedded Swift forbids calling a generic *extension*/default method
+    // on an existential, but allows generic *requirements* (these have no default arguments, so the
+    // call-site ergonomics are unchanged). The existing extension bodies serve as default impls.
+    func makeSucceededFuture<Success: Sendable>(_ value: Success) -> EventLoopFuture<Success>
+    func makeFailedFuture<T>(_ error: Error) -> EventLoopFuture<T>
 
     /// The current time of the event loop.
     var now: NIODeadline { get }
@@ -620,7 +629,11 @@ extension EventLoop {
 
 extension EventLoopGroup {
     public var description: String {
+        #if os(WASI)
+        "EventLoopGroup"
+        #else
         String(describing: self)
+        #endif
     }
 }
 

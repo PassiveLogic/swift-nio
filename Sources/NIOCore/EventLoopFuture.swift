@@ -472,6 +472,10 @@ public final class EventLoopFuture<Value> {
         self._callbacks = .init()
     }
 
+    // Embedded Swift rejects a `deinit` on a generic class whose body needs generic specialization
+    // (here it calls the generic `_promiseCompleted` extension on `any EventLoop`). The deinit is
+    // debug-only leak telemetry, so omit it entirely on WASI.
+    #if !os(WASI)
     deinit {
         debugOnly {
             if let creation = eventLoop._promiseCompleted(futureIdentifier: _NIOEventLoopFutureIdentifier(self)) {
@@ -483,6 +487,7 @@ public final class EventLoopFuture<Value> {
             }
         }
     }
+    #endif
 }
 
 extension EventLoopFuture: Equatable {
@@ -684,16 +689,19 @@ extension EventLoopFuture {
     func _map<NewValue>(
         _ callback: @escaping @Sendable (Value) -> (NewValue)
     ) -> EventLoopFuture<NewValue> {
+        #if !os(WASI)
+        // `as!` to a generic type parameter is unavailable in embedded Swift; skip this
+        // Void-identity fast-path there and always use the general path below.
         if NewValue.self == Value.self && NewValue.self == Void.self {
             self.whenSuccess(callback as! @Sendable (Value) -> Void)
             return self as! EventLoopFuture<NewValue>
-        } else {
-            let next = EventLoopPromise<NewValue>.makeUnleakablePromise(eventLoop: self.eventLoop)
-            self._whenComplete {
-                next._setValue(value: self._value!.map(callback))
-            }
-            return next.futureResult
         }
+        #endif
+        let next = EventLoopPromise<NewValue>.makeUnleakablePromise(eventLoop: self.eventLoop)
+        self._whenComplete {
+            next._setValue(value: self._value!.map(callback))
+        }
+        return next.futureResult
     }
 
     /// When the current `EventLoopFuture<Value>` is in an error state, run the provided callback, which
@@ -1789,7 +1797,9 @@ extension EventLoopFuture {
             // We're already on that event loop, nothing to do here. Save an allocation.
             return self
         }
-        let hoppingPromise = target.makePromise(of: Value.self)
+        // `makePromise` is a generic extension method (forbidden on `any EventLoop` in embedded);
+        // construct the promise directly instead (equivalent, and works on existentials).
+        let hoppingPromise = EventLoopPromise<Value>(eventLoop: target, file: #fileID, line: #line)
         self.cascade(to: hoppingPromise)
         return hoppingPromise.futureResult
     }
