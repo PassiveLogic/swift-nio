@@ -117,11 +117,11 @@ public final class AsyncThreadPool: Sendable {
 
     /// Async helper mirroring `runIfActive` without an EventLoop context.
     public func runIfActive<T: Sendable>(_ body: @escaping @Sendable () throws -> T) async throws -> T {
-        try Task.checkCancellation()
+        if Task.isCancelled { throw CancellationError() }  // Task.checkCancellation() is unavailable in embedded Swift
         guard self.isActive else { throw CancellationError() }
 
         return try await Task {
-            try Task.checkCancellation()
+            if Task.isCancelled { throw CancellationError() }  // Task.checkCancellation() is unavailable in embedded Swift
             guard self.isActive else { throw CancellationError() }
             return try body()
         }.value
@@ -238,8 +238,10 @@ public final class AsyncThreadPool: Sendable {
                 mutableWorkerTasks.append(
                     // NOTE: Using weak self here to avoid potential memory leaks due
                     // to reference cycles, since the task is appended to a member variable.
-                    Task.detached { [weak self] in
-                        await self?.workerLoop(identifier: index)
+                    // `weak` is unavailable in embedded Swift; `unowned(unsafe)` keeps the
+                    // cycle-avoidance intent (the pool outlives its worker tasks).
+                    Task.detached { [unowned(unsafe) self] in
+                        await self.workerLoop(identifier: index)
                     }
                 )
             }

@@ -499,14 +499,21 @@ fileprivate actor _AsyncEventLoopExecutor {
             let nanoseconds = max(interval.nanoseconds, 0)
             // NOTE: Using weak self here to avoid potential memory leaks due
             // to reference cycles, since the task is stored to a member variable.
-            wakeUpTask = Task { [weak self] in
-                guard let self else { return }
+            // `weak` is unavailable in embedded Swift; use `unowned(unsafe)`.
+            wakeUpTask = Task { [unowned(unsafe) self] in
                 if nanoseconds > 0 {
+                    #if os(WASI)
+                    // `Task.sleep(nanoseconds:)` is unavailable in embedded Swift. TODO: back this
+                    // with a wasi clock-based sleep; for now yield (scheduled-task *delays* are not
+                    // honored under embedded WASI, though tasks still run in order).
+                    await Task.yield()
+                    #else
                     do {
                         try await Task.sleep(nanoseconds: UInt64(nanoseconds))
                     } catch {
                         return
                     }
+                    #endif
                 }
                 guard !Task.isCancelled else { return }
                 await self.run()
