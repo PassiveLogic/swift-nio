@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: channel/socket machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -277,3 +278,5 @@ public struct NIOInsecureNoTLS<Bootstrap: NIOClientTCPBootstrapProtocol>: NIOCli
         fatalError("NIOInsecureNoTLS cannot enable TLS.")
     }
 }
+
+#endif  // !os(WASI)

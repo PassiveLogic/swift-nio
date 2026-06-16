@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: channel/socket machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -587,3 +588,5 @@ extension ChannelOptions {
         }
     }
 }
+
+#endif  // !os(WASI)

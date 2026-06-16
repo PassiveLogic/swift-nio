@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: NIOEmbedded test event loop unused on WASI (NIOAsyncRuntime replaces it)
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -537,3 +538,5 @@ private class PromiseCreationStore {
     }
 }
 #endif
+
+#endif  // !os(WASI)

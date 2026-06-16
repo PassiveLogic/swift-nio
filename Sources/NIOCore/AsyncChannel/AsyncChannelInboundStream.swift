@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: async channel machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -163,3 +164,5 @@ extension NIOAsyncChannelInboundStream.AsyncIterator: Sendable {}
 
 @available(*, unavailable)
 extension NIOAsyncChannelInboundStream.AsyncIterator._Backing: Sendable {}
+
+#endif  // !os(WASI)

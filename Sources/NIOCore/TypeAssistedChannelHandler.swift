@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: channel/socket machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -106,3 +107,5 @@ extension ChannelOutboundHandler {
 
 /// A combination of `ChannelInboundHandler` and `ChannelOutboundHandler`.
 public typealias ChannelDuplexHandler = ChannelInboundHandler & ChannelOutboundHandler
+
+#endif  // !os(WASI)

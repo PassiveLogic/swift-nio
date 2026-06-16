@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: channel/socket machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -2609,3 +2610,5 @@ extension ChannelPipeline.SynchronousOperations {
         return ChannelPipeline.countBufferedBytes(context: context, direction: .inbound)
     }
 }
+
+#endif  // !os(WASI)

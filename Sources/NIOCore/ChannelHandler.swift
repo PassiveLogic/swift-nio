@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: channel/socket machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -359,3 +360,5 @@ public protocol NIOInboundByteBufferingChannelHandler {
     /// the next inbound channel handler.
     var inboundBufferedBytes: Int { get }
 }
+
+#endif  // !os(WASI)

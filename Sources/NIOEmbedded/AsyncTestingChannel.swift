@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: NIOEmbedded test event loop unused on WASI (NIOAsyncRuntime replaces it)
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -731,3 +732,5 @@ extension NIOAsyncTestingChannel.BufferState: @unchecked Sendable {}
 extension NIOAsyncTestingChannel.SynchronousOptions: Sendable {}
 
 #endif  // canImport(Dispatch)
+
+#endif  // !os(WASI)

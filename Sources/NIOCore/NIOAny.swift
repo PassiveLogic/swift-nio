@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: channel/socket machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -98,9 +99,13 @@ public struct NIOAny {
         if let v = tryAsByteBuffer() {
             return v
         } else {
+            #if os(WASI)
+            fatalError("NIOAny: tried to decode as ByteBuffer but found a different type")
+            #else
             fatalError(
                 "tried to decode as type \(ByteBuffer.self) but found \(Mirror(reflecting: Mirror(reflecting: self._storage).children.first!.value).subjectType) with contents \(self._storage)"
             )
+            #endif
         }
     }
 
@@ -124,9 +129,13 @@ public struct NIOAny {
         if let v = tryAsIOData() {
             return v
         } else {
+            #if os(WASI)
+            fatalError("NIOAny: tried to decode as IOData but found a different type")
+            #else
             fatalError(
                 "tried to decode as type \(IOData.self) but found \(Mirror(reflecting: Mirror(reflecting: self._storage).children.first!.value).subjectType) with contents \(self._storage)"
             )
+            #endif
         }
     }
 
@@ -150,9 +159,13 @@ public struct NIOAny {
         if let v = tryAsFileRegion() {
             return v
         } else {
+            #if os(WASI)
+            fatalError("NIOAny: tried to decode as FileRegion but found a different type")
+            #else
             fatalError(
                 "tried to decode as type \(FileRegion.self) but found \(Mirror(reflecting: Mirror(reflecting: self._storage).children.first!.value).subjectType) with contents \(self._storage)"
             )
+            #endif
         }
     }
 
@@ -176,9 +189,13 @@ public struct NIOAny {
         if let e = tryAsByteEnvelope() {
             return e
         } else {
+            #if os(WASI)
+            fatalError("NIOAny: tried to decode as AddressedEnvelope<ByteBuffer> but found a different type")
+            #else
             fatalError(
                 "tried to decode as type \(AddressedEnvelope<ByteBuffer>.self) but found \(Mirror(reflecting: Mirror(reflecting: self._storage).children.first!.value).subjectType) with contents \(self._storage)"
             )
+            #endif
         }
     }
 
@@ -205,9 +222,13 @@ public struct NIOAny {
         if let v = tryAsOther(type: type) {
             return v
         } else {
+            #if os(WASI)
+            fatalError("NIOAny: tried to decode as the requested type but found a different type")
+            #else
             fatalError(
                 "tried to decode as type \(T.self) but found \(Mirror(reflecting: Mirror(reflecting: self._storage).children.first!.value).subjectType) with contents \(self._storage)"
             )
+            #endif
         }
     }
 
@@ -284,3 +305,5 @@ extension NIOAny: CustomDebugStringConvertible {
         "(\(self.description))"
     }
 }
+
+#endif  // !os(WASI)

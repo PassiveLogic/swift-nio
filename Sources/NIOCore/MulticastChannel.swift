@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: channel/socket machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -175,3 +176,5 @@ public struct NIOMulticastNotSupportedError: Error {
 public struct NIOMulticastNotImplementedError: Error {
     public init() {}
 }
+
+#endif  // !os(WASI)

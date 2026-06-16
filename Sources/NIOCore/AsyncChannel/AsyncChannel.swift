@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: async channel machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -532,3 +533,5 @@ extension Channel {
         return (inboundStream, writer)
     }
 }
+
+#endif  // !os(WASI)

@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: channel/socket machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -115,3 +116,5 @@ internal final class DeadChannel: Channel, @unchecked Sendable {
     let isActive = false
     let _channelCore: ChannelCore = DeadChannelCore()
 }
+
+#endif  // !os(WASI)

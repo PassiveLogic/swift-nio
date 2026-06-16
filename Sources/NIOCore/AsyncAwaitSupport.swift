@@ -84,6 +84,7 @@ extension EventLoopPromise {
     }
 }
 
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: channel APIs unused by in-memory SQLite
 extension Channel {
     /// Shortcut for calling `write` and `flush`.
     ///
@@ -305,6 +306,7 @@ extension ChannelPipeline {
         try await self.addHandlers(handlers, position: position)
     }
 }
+#endif  // !os(WASI)
 
 /// An error that is thrown when the number of bytes in an AsyncSequence exceeds the limit.
 ///

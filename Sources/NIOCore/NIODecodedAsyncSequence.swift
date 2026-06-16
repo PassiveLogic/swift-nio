@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: channel/socket machinery unused by in-memory SQLite
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -220,3 +221,5 @@ extension NIODecodedAsyncSequence: Sendable where Base: Sendable, Decoder: Senda
 
 @available(*, unavailable)
 extension NIODecodedAsyncSequence.AsyncIterator: Sendable {}
+
+#endif  // !os(WASI)
