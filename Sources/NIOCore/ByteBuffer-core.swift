@@ -1125,7 +1125,7 @@ extension ByteBuffer: CustomStringConvertible, CustomDebugStringConvertible {
     }
 
     public var debugDescription: String {
-        String(describing: self)
+        self.description
     }
 }
 
@@ -1284,7 +1284,11 @@ extension ByteBuffer.CopyBytesError: Hashable {}
 
 extension ByteBuffer.CopyBytesError: CustomDebugStringConvertible {
     public var debugDescription: String {
+        #if os(WASI)
+        "ByteBuffer.CopyBytesError"
+        #else
         String(describing: self.baseError)
+        #endif
     }
 }
 

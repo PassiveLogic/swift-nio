@@ -167,7 +167,11 @@ extension Heap: CustomDebugStringConvertible {
         guard self.storage.count > 0 else {
             return "<empty heap>"
         }
+        #if os(WASI)
+        let descriptions = self.storage.map { _ in "?" }
+        #else
         let descriptions = self.storage.map { String(describing: $0) }
+        #endif
         let maxLen: Int = descriptions.map { $0.count }.max()!  // storage checked non-empty above
         let paddedDescs = descriptions.map { (desc: String) -> String in
             var desc = desc

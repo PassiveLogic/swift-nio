@@ -491,7 +491,11 @@ extension NIONetworkDevice {
 
 extension NIONetworkDevice: CustomDebugStringConvertible {
     public var debugDescription: String {
+        #if os(WASI)
+        let baseString = "Device \(self.name)"
+        #else
         let baseString = "Device \(self.name): address \(String(describing: self.address))"
+        #endif
         let maskString = self.netmask != nil ? " netmask \(self.netmask!)" : ""
         return baseString + maskString
     }

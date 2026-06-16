@@ -864,6 +864,8 @@ extension ByteBuffer {
     #endif
 }
 
+// `Codable` and its `Encoder`/`Decoder` machinery are unavailable in Embedded Swift.
+#if !os(WASI)
 extension ByteBuffer: Codable {
 
     /// Creates a ByteByffer by decoding from a Base64 encoded single value container.
@@ -880,6 +882,7 @@ extension ByteBuffer: Codable {
         try container.encode(base64String)
     }
 }
+#endif
 
 extension ByteBufferAllocator {
     /// Create a fresh `ByteBuffer` containing the bytes of the `string` encoded as UTF-8.

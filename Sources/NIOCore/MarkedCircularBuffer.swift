@@ -89,7 +89,11 @@ public struct MarkedCircularBuffer<Element>: CustomStringConvertible {
         if count > 0 {
             self._markedIndexOffset = count - 1
         } else {
+            #if os(WASI)
+            assert(self._markedIndexOffset == nil, "marked index is unexpectedly set")
+            #else
             assert(self._markedIndexOffset == nil, "marked index is \(self._markedIndexOffset.debugDescription)")
+            #endif
         }
     }
 
