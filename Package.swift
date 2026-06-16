@@ -34,11 +34,10 @@ let swiftSettings: [SwiftSetting] = [
 // This doesn't work when cross-compiling: the privacy manifest will be included in the Bundle and
 // Foundation will be linked. This is, however, strictly better than unconditionally adding the
 // resource.
-#if canImport(Darwin)
-let includePrivacyManifest = true
-#else
+// Embedded-wasm port: forced off — the manifest runs on the (Darwin) host, but the target is
+// wasm32-unknown-wasip1 (embedded, no Foundation), where the generated resource_bundle_accessor's
+// `import Foundation` fails to compile.
 let includePrivacyManifest = false
-#endif
 
 let package = Package(
     name: "swift-nio",
