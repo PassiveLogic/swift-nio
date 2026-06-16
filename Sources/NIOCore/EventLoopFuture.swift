@@ -1193,7 +1193,10 @@ extension EventLoopFuture {
         if self.eventLoop.inEventLoop {
             return fold0()
         } else {
-            let promise = self.eventLoop.makePromise(of: Value.self)
+            // Embedded Swift forbids calling the generic `makePromise` extension method on an
+            // `any EventLoop`; construct the promise directly (generic on `Value` here, loop passed
+            // as a non-generic argument).
+            let promise = EventLoopPromise<Value>(eventLoop: self.eventLoop, file: #fileID, line: #line)
             self.eventLoop.execute {
                 fold0().cascade(to: promise)
             }
@@ -1246,10 +1249,12 @@ extension EventLoopFuture {
         on eventLoop: EventLoop,
         _ nextPartialResult: @escaping ReduceCallback<InputValue>
     ) -> EventLoopFuture<Value> where Value: Sendable {
-        let f0 = eventLoop.makeSucceededFuture(initialResult)
+        // Direct construction instead of the generic `makeSucceededFuture` extension on `any EventLoop`
+        // (forbidden in embedded). `Value: Sendable` here, so the Sendable init applies.
+        let f0 = EventLoopFuture<Value>(eventLoop: eventLoop, value: initialResult)
 
         let body = f0.fold(futures) { (t: Value, u: InputValue) -> EventLoopFuture<Value> in
-            eventLoop.makeSucceededFuture(nextPartialResult(t, u))
+            EventLoopFuture<Value>(eventLoop: eventLoop, value: nextPartialResult(t, u))
         }
 
         return body
@@ -1283,16 +1288,16 @@ extension EventLoopFuture {
         on eventLoop: EventLoop,
         _ updateAccumulatingResult: @escaping @Sendable (inout Value, InputValue) -> Void
     ) -> EventLoopFuture<Value> where Value: Sendable {
-        let p0 = eventLoop.makePromise(of: Value.self)
+        let p0 = EventLoopPromise<Value>(eventLoop: eventLoop, file: #fileID, line: #line)
         let value = NIOLoopBoundBox<Value>(_value: initialResult, uncheckedEventLoop: eventLoop)
 
-        let f0 = eventLoop.makeSucceededFuture(())
+        let f0 = eventLoop.makeSucceededVoidFuture()
         let future = f0.fold(futures) { (_: (), newValue: InputValue) -> EventLoopFuture<Void> in
             eventLoop.assertInEventLoop()
             var v = value.value
             updateAccumulatingResult(&v, newValue)
             value.value = v
-            return eventLoop.makeSucceededFuture(())
+            return eventLoop.makeSucceededVoidFuture()
         }
 
         future.whenSuccess {
@@ -1326,7 +1331,7 @@ extension EventLoopFuture {
         _ futures: [EventLoopFuture<Value>],
         on eventLoop: EventLoop
     ) -> EventLoopFuture<Void> {
-        let promise = eventLoop.makePromise(of: Void.self)
+        let promise = EventLoopPromise<Void>(eventLoop: eventLoop, file: #fileID, line: #line)
         EventLoopFuture.andAllSucceed(futures, promise: promise)
         return promise.futureResult
     }
@@ -1372,7 +1377,7 @@ extension EventLoopFuture {
         _ futures: [EventLoopFuture<Value>],
         on eventLoop: EventLoop
     ) -> EventLoopFuture<[Value]> where Value: Sendable {
-        let promise = eventLoop.makePromise(of: [Value].self)
+        let promise = EventLoopPromise<[Value]>(eventLoop: eventLoop, file: #fileID, line: #line)
         EventLoopFuture.whenAllSucceed(futures, promise: promise)
         return promise.futureResult
     }
@@ -1394,7 +1399,7 @@ extension EventLoopFuture {
         promise: EventLoopPromise<[Value]>
     ) where Value: Sendable {
         let eventLoop = promise.futureResult.eventLoop
-        let reduced = eventLoop.makePromise(of: Void.self)
+        let reduced = EventLoopPromise<Void>(eventLoop: eventLoop, file: #fileID, line: #line)
 
         let results: UnsafeMutableTransferBox<[Value?]> = .init(.init(repeating: nil, count: futures.count))
         let callback = { @Sendable (index: Int, result: Value) in
@@ -1561,7 +1566,7 @@ extension EventLoopFuture {
         _ futures: [EventLoopFuture<Value>],
         on eventLoop: EventLoop
     ) -> EventLoopFuture<Void> {
-        let promise = eventLoop.makePromise(of: Void.self)
+        let promise = EventLoopPromise<Void>(eventLoop: eventLoop, file: #fileID, line: #line)
         EventLoopFuture.andAllComplete(futures, promise: promise)
         return promise.futureResult
     }
@@ -1611,7 +1616,7 @@ extension EventLoopFuture {
         _ futures: [EventLoopFuture<Value>],
         on eventLoop: EventLoop
     ) -> EventLoopFuture<[Result<Value, Error>]> where Value: Sendable {
-        let promise = eventLoop.makePromise(of: [Result<Value, Error>].self)
+        let promise = EventLoopPromise<[Result<Value, Error>]>(eventLoop: eventLoop, file: #fileID, line: #line)
         EventLoopFuture.whenAllComplete(futures, promise: promise)
         return promise.futureResult
     }
@@ -1633,7 +1638,7 @@ extension EventLoopFuture {
         promise: EventLoopPromise<[Result<Value, Error>]>
     ) where Value: Sendable {
         let eventLoop = promise.futureResult.eventLoop
-        let reduced = eventLoop.makePromise(of: Void.self)
+        let reduced = EventLoopPromise<Void>(eventLoop: eventLoop, file: #fileID, line: #line)
 
         let results: UnsafeMutableTransferBox<[Result<Value, Error>]> = .init(
             .init(repeating: .failure(OperationPlaceholderError()), count: futures.count)
@@ -2031,7 +2036,12 @@ extension EventLoopFuture {
             case .success:
                 ()
             case .failure(let error):
+                #if os(WASI)
+                _ = error  // interpolating `any Error` needs reflection, unavailable in embedded Swift
+                assertionFailure("Expected success, but got a failure", file: file, line: line)
+                #else
                 assertionFailure("Expected success, but got failure: \(error)", file: file, line: line)
+                #endif
             }
         }
     }
@@ -2070,7 +2080,12 @@ extension EventLoopFuture {
             case .success:
                 ()
             case .failure(let error):
+                #if os(WASI)
+                _ = error  // interpolating `any Error` needs reflection, unavailable in embedded Swift
+                Swift.preconditionFailure("Expected success, but got a failure", file: file, line: line)
+                #else
                 Swift.preconditionFailure("Expected success, but got failure: \(error)", file: file, line: line)
+                #endif
             }
         }
     }
