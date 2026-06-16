@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: Foundation unavailable in embedded wasm
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -31,3 +32,5 @@ extension JSONSerialization {
         try JSONSerialization.jsonObject(with: Data(buffer: buffer), options: options)
     }
 }
+
+#endif  // !os(WASI)

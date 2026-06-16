@@ -1,3 +1,4 @@
+#if !os(WASI)  // EMBEDDED-WASI-ELIDED: Foundation unavailable in embedded wasm
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the SwiftNIO open source project
@@ -155,3 +156,5 @@ extension JSONEncoder {
         return buffer
     }
 }
+
+#endif  // !os(WASI)
