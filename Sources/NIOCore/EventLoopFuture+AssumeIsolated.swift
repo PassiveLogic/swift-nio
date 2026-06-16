@@ -111,7 +111,7 @@ public struct NIOIsolatedEventLoop {
         line: UInt = #line,
         _ task: @escaping () throws -> EventLoopFuture<T>
     ) -> Scheduled<T> {
-        let promise: EventLoopPromise<T> = self._wrapped.makePromise(file: file, line: line)
+        let promise = EventLoopPromise<T>(eventLoop: self._wrapped, file: file, line: line)
         let scheduled = self.scheduleTask(deadline: deadline, task)
 
         scheduled.futureResult.whenComplete { result in
@@ -175,7 +175,7 @@ public struct NIOIsolatedEventLoop {
     @inlinable
     @available(*, noasync)
     public func makeSucceededFuture<Success>(_ value: Success) -> EventLoopFuture<Success> {
-        let promise = self._wrapped.makePromise(of: Success.self)
+        let promise = EventLoopPromise<Success>(eventLoop: self._wrapped, file: #fileID, line: #line)
         promise.assumeIsolatedUnsafeUnchecked().succeed(value)
         return promise.futureResult
     }
@@ -189,7 +189,7 @@ public struct NIOIsolatedEventLoop {
     @inlinable
     @available(*, noasync)
     public func makeFailedFuture<Success>(_ error: Error) -> EventLoopFuture<Success> {
-        let promise = self._wrapped.makePromise(of: Success.self)
+        let promise = EventLoopPromise<Success>(eventLoop: self._wrapped, file: #fileID, line: #line)
         promise.fail(error)
         return promise.futureResult
     }
@@ -203,7 +203,7 @@ public struct NIOIsolatedEventLoop {
     @inlinable
     @available(*, noasync)
     public func makeCompletedFuture<Success>(_ result: Result<Success, Error>) -> EventLoopFuture<Success> {
-        let promise = self._wrapped.makePromise(of: Success.self)
+        let promise = EventLoopPromise<Success>(eventLoop: self._wrapped, file: #fileID, line: #line)
         promise.assumeIsolatedUnsafeUnchecked().completeWith(result)
         return promise.futureResult
     }

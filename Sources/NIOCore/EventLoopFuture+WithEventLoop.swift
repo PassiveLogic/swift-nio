@@ -140,7 +140,7 @@ extension EventLoopFuture {
         if self.eventLoop.inEventLoop {
             return fold0(eventLoop: self.eventLoop)
         } else {
-            let promise = self.eventLoop.makePromise(of: Value.self)
+            let promise = EventLoopPromise<Value>(eventLoop: self.eventLoop, file: #fileID, line: #line)
             self.eventLoop.execute { [eventLoop = self.eventLoop] in
                 fold0(eventLoop: eventLoop).cascade(to: promise)
             }
