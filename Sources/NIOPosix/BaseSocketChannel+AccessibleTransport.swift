@@ -12,6 +12,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if !os(WASI)
+
 import NIOCore
 
 extension BaseSocketChannel where SocketType: BaseSocket {
@@ -43,3 +45,4 @@ extension SocketChannel: NIOTransportAccessibleChannelCore {}
 extension ServerSocketChannel: NIOTransportAccessibleChannelCore {}
 extension DatagramChannel: NIOTransportAccessibleChannelCore {}
 extension PipeChannel: NIOTransportAccessibleChannelCore {}
+#endif  // !os(WASI)
